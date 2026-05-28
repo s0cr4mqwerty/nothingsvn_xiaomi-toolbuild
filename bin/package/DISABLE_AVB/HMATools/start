@@ -19,6 +19,8 @@ if [ -f "boot.img" ]; then
   #Unpack boot.img
   patch "Start Process..."
   disable_avb_verify $target >/dev/null 2>&1
+  jq '.info.cmdline = "androidboot.verifiedbootstate=green androidboot.vbmeta.device_state=locked " + .info.cmdline' \
+    boot.json > boot_new.json && mv -f boot_new.json boot.json
   $repack >/dev/null 2>&1
   #Repack Boot.img
   mv "boot.img.signed" "boot.img"
@@ -39,6 +41,8 @@ if [ -f "vendor_boot.img" ]; then
   patch "Start Process..."
   $unpack >/dev/null 2>&1
   disable_avb_verify $target >/dev/null 2>&1
+  jq '.info.cmdline = "androidboot.verifiedbootstate=green androidboot.vbmeta.device_state=locked " + .info.cmdline' \
+    vendor_boot.json > vendor_boot_new.json && mv -f vendor_boot_new.json vendor_boot.json
   #Repack vendor_boot.img
   $repack >/dev/null 2>&1
   rm -rf vendor_boot.img
