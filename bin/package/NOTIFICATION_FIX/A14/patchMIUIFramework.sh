@@ -69,8 +69,12 @@ find_and_replace() {
     local replace=$2
     local base_dir=$work_dir/jar_temp/miui-framework.jar.out
     local files=(
-        "ApplicationPackageManagerInjector.smali"
         "AppOpsManagerInjector.smali"
+        "ApplicationPackageManagerInjector.smali"
+        "NearbyUtils.smali"
+        "ShortcutFunctionManager.smali"
+        "SymlinkUtils.smali"
+        "MultiLangHelper.smali"
     )
 
     for file in "${files[@]}"; do
@@ -83,28 +87,19 @@ find_and_replace() {
     done
 }
 
-find_and_replace_build_file() {
-    local search=$1
-    local replace=$2
-    local base_dir=$work_dir/jar_temp/miui-framework.jar.out
-    local file="Build.smali"
-
-    file_path=$(find "$base_dir" -name "$file")
-    if [[ -n $file_path ]]; then
-        if grep -q "$search" "$file_path"; then
-            sed -i "s|$search|$replace|g" "$file_path"
-        fi
-    fi
-}
-
-
 miui-framework() {
     jar_util d "miui-framework.jar" fw
 
-    search="Lmiui/os/Build;->IS_INTERNATIONAL_BUILD"
-    replace="Lmiui/os/Build;->IS_MIUI"
+    search="Lmiui/os/Build;->IS_INTERNATIONAL_BUILD:Z"
+    replace="Lmiui/os/Buildv2;->IS_OPENSOURCE_BUILD:Z"
     
     find_and_replace "$search" "$replace"
+
+    find_and_replace "ro.product.mod_device" "ro.product.xmregion"
+
+    find_and_replace "CN" ""
+
+    cp -rf "$work_dir/bin/package/NOTIFICATION_FIX/smali/" "$work_dir/jar_temp/miui-framework.jar.out/smali/"
 
     jar_util a "miui-framework.jar" 
 }

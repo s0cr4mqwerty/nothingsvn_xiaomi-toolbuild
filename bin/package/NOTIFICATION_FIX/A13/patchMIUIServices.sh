@@ -1,6 +1,7 @@
 work_dir=$(pwd)
-repS="python3 $work_dir/bin/strRep.py"
 source $work_dir/functions.sh
+repS="python3 $work_dir/bin/strRep.py"
+sdkLevel=$(cat $work_dir/build/baserom/images/system/system/build.prop |grep "ro.build.version.sdk" |cut -d "=" -f 2 |awk 'NR==1')
 if [[ ! -d $dir/jar_temp ]]; then
 
 	mkdir $dir/jar_temp
@@ -12,12 +13,12 @@ jar_util()
     cd $work_dir
     #binary
     if [[ $3 == "fw" ]]; then 
-        bak="java -jar $work_dir/bin/apktool/baksmaliv2.jar d --api 33"
-        sma="java -jar $work_dir/bin/apktool/smaliv2.jar a --api 33"
+        bak="java -jar $work_dir/bin/apktool/baksmaliv2.jar d --api $sdkLevel"
+        sma="java -jar $work_dir/bin/apktool/smaliv2.jar a --api $sdkLevel"
     fi
 
     if [[ $1 == "d" ]]; then
-        patch "Patching $2 : "
+        patch "$2"
         if [[ -f $work_dir/build/baserom/images/system_ext/framework/miui-services.jar ]]; then
             sudo cp $work_dir/build/baserom/images/system_ext/framework/miui-services.jar $work_dir/jar_temp
             sudo chown $(whoami) $work_dir/jar_temp/$2
@@ -75,23 +76,58 @@ find_and_replace() {
     local search=$1
     local replace=$2
     local base_dir=$work_dir/jar_temp/miui-services.jar.out
-    local files=(
+	local files=(
+        "ActivityManagerServiceImpl.smali"
+        "BroadcastQueueModernStubImpl.smali"
+        "MiProcessTracker.smali"
         "AppOpsServiceState.smali"
         "AppOpsServiceStubImpl.smali"
-        "ForceDarkAppListManager.smali"
         "MiuiBatteryServiceImpl.smali"
-		"MiuiBatteryStatsService$BatteryStatsHandler.smali"
         "AlarmManagerServiceStubImpl.smali"
-        "ActivityManagerServiceImpl.smali"
-        "BroadcastQueueImpl.smali"
+        "MutableActivityManagerShellCommandStubImpl.smali"
+        "PreStartFeedbackImpl.smali"
         "ProcessManagerService.smali"
         "ProcessPolicy.smali"
         "ProcessSceneCleaner.smali"
+        "AudioServiceStubImpl.smali"
+        "ClipboardChecker.smali"
+        "ClipboardServiceStubImpl.smali"
+        "DevicePolicyManagerServiceStubImpl.smali"
+        "InputManagerServiceStubImpl.smali"
+        "InputMethodManagerServiceImpl.smali"
+        "SogouInputMethodSwitcher.smali"
+        "JobServiceContextImpl.smali"
         "NotificationManagerServiceImpl.smali"
         "ActivityTaskManagerServiceImpl.smali"
 		"SecurityManagerService.smali"
 		"GreezeManagerService.smali"
 		"XSpaceManagerServiceImpl.smali"
+        "BroadcastQueueImpl.smali"
+        "GnssEventTrackingImpl.smali"
+        "PackageManagerServiceImpl.smali"
+        "MiuiShortcutTriggerHelper\$ShortcutSettingsObserver.smali"
+        "ActivityTaskSupervisorImpl.smali"
+        "MiuiSplitInputMethodImpl.smali"
+        "WindowManagerServiceImpl.smali"
+        "DeviceIdleControllerStubImpl.smali"
+        "AppOpsServiceStubImpl.smali"
+        "ForceDarkAppListManager.smali"
+        "MiuiBatteryIntelligence.smali"
+        "MiuiBatteryServiceImpl.smali"
+        "MiuiBatteryStatsService\$BatteryStatsHandler.smali"
+        "SystemServerImpl.smali"
+        "AlarmManagerServiceStubImpl.smali"
+        "SystemServerImpl.smali"
+		"ActivityManagerServiceImpl.smali"
+		"BroadcastQueueModernStubImpl.smali"
+		"ProcessManagerService.smali"
+		"ProcessSceneCleaner.smali"
+		"JobServiceContextImpl.smali"
+		"ActivitySecurityHelper.smali"
+		"ProcessPolicy.smali"
+		"VibratorManagerServiceImpl.smali"
+		"TaskStubImpl.smali"
+		"GreezeManagerService.smali"
     )
 
     for file in "${files[@]}"; do
@@ -104,11 +140,17 @@ find_and_replace() {
     done
 }
 
+
 miui-services() {
     jar_util d "miui-services.jar" fw
+	
+	p1=$(find "$work_dir/jar_temp/" -type f -name PolicyManager.smali)
 
-    find_and_replace "Lmiui/os/Build;->IS_INTERNATIONAL_BUILD:Z" "Lmiui/os/Build;->IS_MIUI:Z"
-    
+    find_and_replace "Lmiui/os/Build;->IS_INTERNATIONAL_BUILD:Z" "Lmiui/os/Buildv2;->IS_OPENSOURCE_BUILD:Z"
+	
+	sed -i '/sput-boolean v[0-9]\+, Lcom\/miui\/server\/greeze\/PolicyManager;->CN_MODEL:Z/a\
+\n    const/4 v0, 0x0' $p1
+
     jar_util a "miui-services.jar" 
 }
 
