@@ -73,6 +73,7 @@ repack "Output: "
 repack "$(pwd)/out/${os_type}_${polyxver}_${device_code}_${base_rom_code}_${hash}_${status}.zip"
 upload "Uploading"
 output_file="out/${os_type}_${polyxver}_${device_code}_${base_rom_code}_${hash}_${status}.zip"
+echo "${os_type}_${polyxver}_${device_code}_${base_rom_code}_${hash}_${status}.zip" > $work_dir/bin/ddevice/output_zip.txt
 
 if [[ $rom_os == "MIUI" ]];then
     uploaddir="MIUI"

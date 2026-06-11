@@ -20,6 +20,14 @@ jobs:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@main
+
+      - name: Start Notify
+        run: |
+          pip install requests
+          python notify.py start "${{ github.repository }}" "${{ inputs.input_url }}" "xiaomi" "${{ inputs.builder_name }}" "${{ inputs.builder_id }}"
+
       - name: Clean All Unused file,application
         run: |
           docker rmi `docker images -q` || true
@@ -49,16 +57,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Checkout repository
-        uses: actions/checkout@main
-
       - name: Install Stuff
         run: |
           sudo bash setup.sh
-
-      - name: Start Notify
-        run: |
-          python notify.py start "${{ github.repository }}" "${{ inputs.input_url }}" "xiaomi" "${{ inputs.builder_name }}" "${{ inputs.builder_id }}"
         
       - name: Giving permission
         run: |
@@ -72,6 +73,7 @@ jobs:
 
       - name: Pack ROM...
         run: |
+          python notify.py pack "${{ github.repository }}" "${{ inputs.input_url }}" "xiaomi" "${{ inputs.builder_name }}" "${{ inputs.builder_id }}"
           sudo bash packROM.sh
 
       - name: Setup Rclone...

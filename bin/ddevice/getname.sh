@@ -2,14 +2,16 @@
 work_dir=$(pwd)
 source $work_dir/functions.sh
 
-FILE_JSON1="$work_dir/bin/ddevice/data/devices.json"
-FILE_JSON2="$work_dir/bin/ddevice/data/names.json"
-KEY=$(cat $work_dir/bin/ddevice/device_f.txt)
+FILE_JSON="$work_dir/bin/ddevice/data/devices.json"
+KEY="${1:-$(cat $work_dir/bin/ddevice/device_f.txt)}"
 
-if grep -qw "$1" "$work_dir/bin/ddevice/data/devices_data.txt"; then
-  VALUE=$(jq -r --arg key "$KEY" '.[$key] // "Không tìm thấy key"' "$FILE_JSON1")
-  echo "$VALUE" > $work_dir/bin/ddevice/name_devices.txt
-else
-  VALUE=$(jq -r --arg key "$KEY" '.[$key] // "Không tìm thấy key"' "$FILE_JSON2")
-  echo "$VALUE" > $work_dir/bin/ddevice/name_devices.txt
+# Find the exact key with correct capitalization from the reference lists
+EXACT_KEY=$(grep -ix "$KEY" "$work_dir/bin/ddevice/data/devices_data.txt" 2>/dev/null || grep -ix "$KEY" "$work_dir/bin/ddevice/data/pad_data.txt" 2>/dev/null)
+
+if [ -z "$EXACT_KEY" ]; then
+  # Fallback to key itself if not matched in the lists
+  EXACT_KEY="$KEY"
 fi
+
+VALUE=$(jq -r --arg key "$EXACT_KEY" '.[$key] // "Không tìm thấy key"' "$FILE_JSON")
+echo "$VALUE" > $work_dir/bin/ddevice/name_devices.txt
