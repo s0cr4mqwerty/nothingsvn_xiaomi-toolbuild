@@ -57,8 +57,7 @@ for pname in ${super_list}; do
          
         thisSize=$(echo "$thisSize + $addSize" | bc)
         if [[ "$PACK_TYPE" == "EXT" ]]; then
-            python3 $work_dir/bin/fspatch.py $work_dir/build/baserom/images/${pname} $work_dir/build/baserom/images/config/${pname}_fs_config >/dev/null 2>&1
-            python3 $work_dir/bin/contextpatch.py $work_dir/build/baserom/images/${pname} $work_dir/build/baserom/images/config/${pname}_file_contexts >/dev/null 2>&1
+            python3 $work_dir/bin/fix_selinux.py $work_dir/build/baserom/images/${pname} $work_dir/build/baserom/images/config/${pname}_fs_config $work_dir/build/baserom/images/config/${pname}_file_contexts >/dev/null 2>&1
             make_ext4fs -J -T $(date +%s) -S $work_dir/build/baserom/images/config/${pname}_file_contexts -l $thisSize -C $work_dir/build/baserom/images/config/${pname}_fs_config -L ${pname} -a ${pname} $work_dir/build/baserom/images/${pname}.img $work_dir/build/baserom/images/${pname} >/dev/null 2>&1
             if [ -f "$work_dir/build/baserom/images/${pname}.img" ]; then
                 repack "Packing [${pname}.img] success"
@@ -66,8 +65,7 @@ for pname in ${super_list}; do
                 repack "Packing [${pname}] failed!"
             fi
         elif [[ "$PACK_TYPE" == "EROFS" ]]; then
-            python3 $work_dir/bin/fspatch.py $work_dir/build/baserom/images/${pname} $work_dir/build/baserom/images/config/${pname}_fs_config >/dev/null 2>&1
-            python3 bin/contextpatch.py $work_dir/build/baserom/images/${pname} $work_dir/build/baserom/images/config/${pname}_file_contexts >/dev/null 2>&1
+            python3 $work_dir/bin/fix_selinux.py $work_dir/build/baserom/images/${pname} $work_dir/build/baserom/images/config/${pname}_fs_config $work_dir/build/baserom/images/config/${pname}_file_contexts >/dev/null 2>&1
             mkfs.erofs --quiet -zlz4hc,9 --mount-point ${pname} --fs-config-file=$work_dir/build/baserom/images/config/${pname}_fs_config --file-contexts=$work_dir/build/baserom/images/config/${pname}_file_contexts $work_dir/build/baserom/images/${pname}.img $work_dir/build/baserom/images/${pname} >/dev/null 2>&1
             if [ -f "$work_dir/build/baserom/images/${pname}.img" ]; then
                 repack "Packing [${pname}.img] success"

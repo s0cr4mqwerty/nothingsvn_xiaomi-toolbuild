@@ -309,3 +309,38 @@ mvdir() {
 
     echo "Moved all .smali files from $folder_name to $target_folder"
 }
+
+patch_file_context() {
+    local partition="$1"
+    local file_path="$2"
+    local context="$3"
+    local images_dir="$WORK_DIR/build/baserom/images"
+    local config_dir="$images_dir/config"
+    
+    local config_fc="$config_dir/${partition}_file_contexts"
+    if [ -f "$config_fc" ]; then
+        if ! grep -q "$file_path" "$config_fc"; then
+            echo "$file_path $context" >> "$config_fc"
+        fi
+    fi
+
+    local image_fc="$images_dir/$partition/etc/selinux/${partition}_file_contexts"
+    if [ -f "$image_fc" ]; then
+        if ! grep -q "$file_path" "$image_fc"; then
+            echo "$file_path $context" >> "$image_fc"
+        fi
+    fi
+}
+
+patch_sepolicy() {
+    local partition="$1"
+    local rule="$2"
+    local images_dir="$WORK_DIR/build/baserom/images"
+    
+    local cil_file="$images_dir/$partition/etc/selinux/${partition}_sepolicy.cil"
+    if [ -f "$cil_file" ]; then
+        if ! grep -q -F "$rule" "$cil_file"; then
+            echo "$rule" >> "$cil_file"
+        fi
+    fi
+}
