@@ -6,6 +6,7 @@ BACKUP_DIR="$WORK_DIR/backup"
 SCRIPT_DIR="$work_dir/bin/package/COREPATCH"
 TOOLS_DIR="$work_dir/bin/apktool"
 source "${SCRIPT_DIR}/helper.sh"
+regionTYPE=$(cat $work_dir/bin/ddevice/device_type.txt)
 # Create backup directory
 mkdir -p "$BACKUP_DIR"
 
@@ -662,6 +663,123 @@ apply_framework_signature_patches() {
   log "Signature verification patches applied to framework.jar (Android 16)"
 }
 
+# Apply CN notification fix patches to miui-services.jar
+apply_miui_services_cn_notification_fix() {
+  local decompile_dir="$1"
+  local class="
+$decompile_dir/smali*/com/android/server/am/ActivityManagerServiceImpl.smali
+$decompile_dir/smali*/com/android/server/am/BroadcastQueueModernStubImpl.smali
+$decompile_dir/smali*/com/android/server/am/MiProcessTracker.smali
+$decompile_dir/smali*/com/android/server/am/MutableActivityManagerShellCommandStubImpl.smali
+$decompile_dir/smali*/com/android/server/am/PreStartFeedbackImpl.smali
+$decompile_dir/smali*/com/android/server/am/ProcessManagerService.smali
+$decompile_dir/smali*/com/android/server/am/ProcessPolicy.smali
+$decompile_dir/smali*/com/android/server/am/ProcessSceneCleaner.smali
+$decompile_dir/smali*/com/android/server/audio/AudioServiceStubImpl.smali
+$decompile_dir/smali*/com/android/server/clipboard/ClipboardChecker.smali
+$decompile_dir/smali*/com/android/server/clipboard/ClipboardServiceStubImpl.smali
+$decompile_dir/smali*/com/android/server/devicepolicy/DevicePolicyManagerServiceStubImpl.smali
+$decompile_dir/smali*/com/android/server/input/InputManagerServiceStubImpl.smali
+$decompile_dir/smali*/com/android/server/inputmethod/InputMethodManagerServiceImpl.smali
+$decompile_dir/smali*/com/android/server/inputmethod/SogouInputMethodSwitcher.smali
+$decompile_dir/smali*/com/android/server/job/JobServiceContextImpl.smali
+$decompile_dir/smali*/com/android/server/location/gnss/datacollect/GnssEventTrackingImpl.smali
+$decompile_dir/smali*/com/android/server/location/gnss/enhance/EnhanceUtils.smali
+$decompile_dir/smali*/com/android/server/location/gnss/gnssSelfRecovery/Utils.smali
+$decompile_dir/smali*/com/android/server/location/gnss/operators/GnssForKtCustomImpl.smali
+$decompile_dir/smali*/com/android/server/location/gnss/GnssLocationProviderImpl.smali
+$decompile_dir/smali*/com/android/server/location/util/GnssCustFeatureHelper.smali
+$decompile_dir/smali*/com/android/server/location/GnssCollectDataImpl.smali
+$decompile_dir/smali*/com/android/server/location/MiuiBlurLocationManagerImpl.smali
+$decompile_dir/smali*/com/android/server/notification/NotificationManagerServiceImpl.smali
+$decompile_dir/smali*/com/android/server/pm/PackageManagerServiceImpl.smali
+$decompile_dir/smali*/com/android/server/policy/MiuiShortcutTriggerHelper\$ShortcutSettingsObserver.smali
+$decompile_dir/smali*/com/android/server/wm/ActivityTaskSupervisorImpl.smali
+$decompile_dir/smali*/com/android/server/wm/MiuiSplitInputMethodImpl.smali
+$decompile_dir/smali*/com/android/server/wm/WindowManagerServiceImpl.smali
+$decompile_dir/smali*/com/android/server/DeviceIdleControllerStubImpl.smali
+$decompile_dir/smali*/com/android/server/ForceDarkAppListManager.smali
+$decompile_dir/smali*/com/miui/server/greeze/PolicyManager.smali
+$decompile_dir/smali*/com/miui/server/security/AppBehaviorService.smali
+$decompile_dir/smali*/com/miui/server/smartpower/policy/SmartArtRuntimePolicy.smali
+$decompile_dir/smali*/com/miui/server/smartpower/FlingOptimizeManager.smali
+$decompile_dir/smali*/com/miui/server/turbosched/TurboSchedManagerService.smali
+$decompile_dir/smali*/com/xiaomi/NetworkBoost/slaservice/GameLatencyPredict.smali
+$decompile_dir/smali*/com/xiaomi/NetworkBoost/slaservice/SLAAppLib.smali
+$decompile_dir/smali*/com/xiaomi/NetworkBoost/slaservice/SLAAppLib\$2.smali
+$decompile_dir/smali*/miui/app/ActivitySecurityHelper.smali
+"
+  for i in $class; do
+    [ -f "$i" ] || continue
+    sed -i 's/com.baidu.input_mi/com.google.android.inputmethod.latin/g' "$i"
+    sed -i -E 's|(sget-boolean[[:space:]]+)([vp][0-9]+),[[:space:]]+Lmiui/os/Build;->IS_INTERNATIONAL_BUILD:Z|\1\2, Lmiui/os/xBuild;->IS_INTERNATIONAL_BUILD:Z|g' "$i"
+  done
+  for i in $decompile_dir/smali*/com/android/server/am/ActivityManagerServiceImpl.smali; do
+    [ -f "$i" ] || continue
+    sed -i '/Lmiui\/drm\/DrmBroadcast;->getInstance/{N;N;N;N;d}' "$i"
+  done
+}
+
+apply_miui_services_global_patch() {
+  local decompile_dir="$1"
+  local class="
+$decompile_dir/smali*/com/android/server/devicepolicy/DevicePolicyManagerServiceStubImpl.smali
+$decompile_dir/smali*/com/android/server/input/InputManagerServiceStubImpl.smali
+$decompile_dir/smali*/com/android/server/inputmethod/InputMethodManagerServiceImpl.smali
+$decompile_dir/smali*/com/android/server/wm/ActivityTaskSupervisorImpl.smali
+$decompile_dir/smali*/com/android/server/wm/MiuiSplitInputMethodImpl.smali
+$decompile_dir/smali*/com/miui/server/security/AppBehaviorService.smali
+"
+  for i in $class; do
+    [ -f "$i" ] || continue
+    sed -i 's/com.baidu.input_mi/com.google.android.inputmethod.latin/g' "$i"
+  done
+  for i in $decompile_dir/smali*/com/android/server/am/ProcessPolicy.smali; do
+    replace_line_contains_in_smali_method "IS_INTERNATIONAL_BUILD" "updateContentCatcherWhitelist()V" "    const/4 v0, 0x0" $i
+  done
+  for i in $decompile_dir/smali*/com/android/server/am/ActivityManagerServiceImpl.smali; do
+    [ -f "$i" ] || continue
+    sed -i '/Lmiui\/drm\/DrmBroadcast;->getInstance/{N;N;N;N;d}' "$i"
+  done
+}
+
+# Apply Global Patch
+apply_miui_framework_global_patch() {
+  local decompile_dir="$1"
+  cp -rf "$home/addons/miui-framework/smali/miui" "$decompile_dir/smali"
+  ls "$decompile_dir/smali/miui"
+  local class="
+$decompile_dir/smali*/android/inputmethodservice/InputMethodServiceInjector.smali
+$decompile_dir/smali*/android/view/inputmethod/InputMethodManagerStubImpl.smali
+$decompile_dir/smali*/com/android/internal/os/AnrEnhanceImpl.smali
+"
+  for i in $class; do
+    [ -f "$i" ] || continue
+    sed -i 's/com.baidu.input_mi/com.google.android.inputmethod.latin/g' "$i"
+    echo "Patched Gboard"
+  done
+}
+
+apply_miui_framework_cn_notification_fix() {
+  local decompile_dir="$1"
+  local class="
+$decompile_dir/smali*/android/app/AppOpsManagerInjector.smali
+$decompile_dir/smali*/android/inputmethodservice/InputMethodServiceInjector.smali
+$decompile_dir/smali*/android/view/inputmethod/InputMethodManagerStubImpl.smali
+$decompile_dir/smali*/com/android/internal/os/AnrEnhanceImpl.smali
+$decompile_dir/smali*/com/miui/mishare/app/NearbyUtils.smali
+$decompile_dir/smali*/miui/hardware/input/shortcut/ShortcutFunctionManager.smali
+$decompile_dir/smali*/miui/util/font/SymlinkUtils.smali
+$decompile_dir/smali*/miui/util/font/MultiLangHelper.smali
+"
+  for i in $class; do
+    [ -f "$i" ] || continue
+    sed -i 's/com.baidu.input_mi/com.google.android.inputmethod.latin/g' "$i"
+    sed -i -E 's|(sget-boolean[[:space:]]+)([vp][0-9]+),[[:space:]]+Lmiui/os/Build;->IS_INTERNATIONAL_BUILD:Z|\1\2, Lmiui/os/xBuild;->IS_INTERNATIONAL_BUILD:Z|g' "$i"
+  done
+  cp -rf "$SCRIPT_DIR/miui" "$decompile_dir/smali"
+}
+
 # Apply disable secure flag patches to framework.jar (Android 16)
 apply_framework_disable_secure_flag() {
   local decompile_dir="$1"
@@ -970,6 +1088,11 @@ patch_miui_services() {
   apply_miui_services_floating "$decompile_dir"
   apply_miui_services_gboard "$decompile_dir"
   apply_miui_services_contentextension "$decompile_dir"
+  if [[ $regionTYPE == *"Global"* ]];then
+    apply_miui_services_global_patch "$decompile_dir"
+  else
+    apply_miui_services_cn_notification_fix "$decompile_dir"
+  fi
 
   # Apply invoke-custom patches (common to all features)
   # modify_invoke_custom_methods "$decompile_dir"
@@ -1032,6 +1155,11 @@ patch_miui_framework() {
 
   # Apply Gboard
   apply_miui_framework_gboard "$decompile_dir"
+  if [[ $regionTYPE == *"Global"* ]];then
+    apply_miui_framework_global_patch "$decompile_dir"
+  else
+    apply_miui_framework_cn_notification_fix "$decompile_dir"
+  fi
 
   # Apply invoke-custom patches (common to all features)
   # modify_invoke_custom_methods "$decompile_dir"
