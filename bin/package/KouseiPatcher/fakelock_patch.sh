@@ -7,7 +7,10 @@ prop="$work_dir/bin/package/KouseiPatcher/prop"
 SEARCH_DIR="build/baserom/images"
 BUILD_PROP=$(find "$SEARCH_DIR" -type f -name "build.prop" | head -n 1)
 first_api=$(grep "ro.product.first_api_level" "$BUILD_PROP" | awk 'NR==1' | cut -d '=' -f 2 | tr -d ' \r')
-androidVER=$(cat $work_dir/bin/ddevice/androidver.txt)
+androidVER=$(cat $work_dir/bin/ddevice/androidver.txt | tr -d ' \r\n' | cut -d '.' -f 1)
+echo "[DEBUG] androidVER raw hex: $(cat $work_dir/bin/ddevice/androidver.txt | xxd | head -n 2)"
+echo "[DEBUG] androidVER after clean: '$androidVER'"
+echo "[DEBUG] androidVER length: $(echo -n "$androidVER" | wc -c)"
 
 if [ "$androidVER" -lt 14 ]; then
     mods "Android lower than 14!Inject XEUToolbox by Xiaomi.eu"
