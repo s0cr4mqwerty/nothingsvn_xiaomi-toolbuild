@@ -16,6 +16,9 @@ on:
 jobs:
   Initialize:
     runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: ""
+      TELEGRAM_CHANNEL_ID: ""
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
@@ -71,9 +74,10 @@ jobs:
         run: |
           sudo bash packROM.sh
 
-      - name: Upload ROM as GitHub Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ROM-Xiaomi-Custom
-          path: out/*.zip
-          retention-days: 7
+      - name: Setup Rclone...
+        run: |
+          sudo -E bash uploadROM.sh setup "${{ secrets.GH_TOKEN }}" "${{ secrets.GH_REPO }}" "${{ secrets.RCLONE_TOKEN_PATH }}"
+          
+      - name: Upload ROM...
+        run: |
+          sudo -E bash uploadROM.sh
